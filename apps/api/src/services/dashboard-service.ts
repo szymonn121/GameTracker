@@ -5,7 +5,7 @@ import * as path from 'node:path';
 
 export class DashboardService {
   static async getDashboard(userId: string) {
-    // Create user if doesn't exist
+    // Create user if doesn't exist (should normally exist after Steam auth)
     let user = await prisma.user.findUnique({ where: { id: userId }, include: { userGames: true, activity: true } });
     if (!user) {
       user = await prisma.user.create({
@@ -32,17 +32,17 @@ export class DashboardService {
     // Compute metrics from DB
     let totalHours = user.userGames.reduce((sum, ug) => sum + ug.hours, 0);
     
-    // If DB is empty, try to load total from dump
+    // If DB is empty, try per-user dump once
     if (totalHours === 0) {
-      const dumpPath = path.resolve(__dirname, '../../../../steam_dump.json');
+      const dumpPath = path.resolve(__dirname, `../../../../steam_dump_${userId}.json`);
       if (fs.existsSync(dumpPath)) {
         try {
           const raw = fs.readFileSync(dumpPath, 'utf-8');
           const dump = JSON.parse(raw) as { totals?: { playtime_hours?: number } };
           totalHours = dump.totals?.playtime_hours || 0;
-          console.log(`[Dashboard] Loaded total hours from dump: ${totalHours}`);
+          console.log(`[Dashboard] Loaded total hours from per-user dump: ${totalHours}`);
         } catch (e) {
-          console.warn('[Dashboard] Failed to read dump for total hours:', (e as Error).message);
+          console.warn('[Dashboard] Failed to read per-user dump for total hours:', (e as Error).message);
         }
       }
     }
@@ -68,8 +68,7 @@ export class DashboardService {
       .map((ug) => ({ genre: ug.game!.name, hours: Math.round(ug.hours) }));
 
     if (topGenres.length === 0) {
-      // Try to load from dump
-      const dumpPath = path.resolve(__dirname, '../../../../steam_dump.json');
+      const dumpPath = path.resolve(__dirname, `../../../../steam_dump_${userId}.json`);
       if (fs.existsSync(dumpPath)) {
         try {
           const raw = fs.readFileSync(dumpPath, 'utf-8');
@@ -80,9 +79,9 @@ export class DashboardService {
             .sort((a, b) => (b.playtime_forever_min || 0) - (a.playtime_forever_min || 0))
             .slice(0, 5)
             .map((g) => ({ genre: g.name || `Game ${g.appid}`, hours: Math.round((g.playtime_forever_min || 0) / 60) }));
-          console.log(`[Dashboard] Loaded ${topGenres.length} top games from dump`);
+          console.log(`[Dashboard] Loaded ${topGenres.length} top games from per-user dump`);
         } catch (e) {
-          console.warn('[Dashboard] Failed to read dump:', (e as Error).message);
+          console.warn('[Dashboard] Failed to read per-user dump:', (e as Error).message);
         }
       }
     }
@@ -104,7 +103,7 @@ export class DashboardService {
 
     // If no recent games in DB, try to load from dump
     if (recentGames.length === 0) {
-      const dumpPath = path.resolve(__dirname, '../../../../steam_dump.json');
+      const dumpPath = path.resolve(__dirname, `../../../../steam_dump_${userId}.json`);
       if (fs.existsSync(dumpPath)) {
         try {
           const raw = fs.readFileSync(dumpPath, 'utf-8');
@@ -119,9 +118,9 @@ export class DashboardService {
               name: g.name || `Game ${g.appid}`,
               genres: []
             }));
-          console.log(`[Dashboard] Loaded ${recentGames.length} recent games from dump`);
+          console.log(`[Dashboard] Loaded ${recentGames.length} recent games from per-user dump`);
         } catch (e) {
-          console.warn('[Dashboard] Failed to read dump for recent games:', (e as Error).message);
+          console.warn('[Dashboard] Failed to read per-user dump for recent games:', (e as Error).message);
         }
       }
     }
