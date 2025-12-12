@@ -1,6 +1,16 @@
 'use client';
 
+import { useEffect } from 'react';
+
 export default function LoginPage() {
+  // Clear old tokens when landing on login page
+  useEffect(() => {
+    localStorage.clear();
+    document.cookie.split(';').forEach(c => {
+      document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+    });
+  }, []);
+
   const handleSteamLogin = () => {
     window.location.href = 'http://localhost:4000/auth/steam';
   };

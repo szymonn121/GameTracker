@@ -10,11 +10,19 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
-      // Store token in localStorage AND cookie
+      // Clear old tokens first
+      localStorage.clear();
+      document.cookie.split(';').forEach(c => {
+        document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+      });
+      
+      // Store NEW token in localStorage AND cookie
       localStorage.setItem('auth_token', token);
-      document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
-      // Redirect to dashboard
-      router.push('/');
+      localStorage.setItem('auth_token_time', Date.now().toString());
+      document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`; // 7 days
+      
+      // Force hard navigation to clear any cached data
+      window.location.href = '/';
     } else {
       // No token, redirect to login
       router.push('/login');

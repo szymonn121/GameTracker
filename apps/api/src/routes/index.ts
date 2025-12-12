@@ -318,27 +318,25 @@ router.delete('/friends/:friendId', FriendsController.remove);
 
 router.get('/matchmaking/recommendations', MatchmakingController.recommend);
 
-// Manual trigger to import dump into DB and return counts
-router.post('/sync/import', async (req, res) => {
+// Manual trigger to sync from Steam API and return counts
+router.post('/sync/import', authMiddleware, async (req, res) => {
   try {
     const { SyncService } = await import('../services/sync-service');
-    // Determine user: from query param, auth, or latest created
-    let userId = (req.query.userId as string) || req.user?.id;
-    if (!userId) {
-      const latest = await prisma.user.findFirst({ orderBy: { createdAt: 'desc' } });
-      userId = latest?.id;
-    }
-    if (!userId) return res.status(400).json({ error: 'No user available to import into' });
+    const userId = req.user?.id;
+    
+    if (!userId) return res.status(401).json({ error: 'Authentication required' });
+    
     console.log(`[Routes] /sync/import starting for userId=${userId}`);
-    const result = await SyncService.importDump(userId);
+    await SyncService.syncSteam(userId);
+    
     const [u, g, ug] = await Promise.all([
       prisma.user.count(),
       prisma.game.count(),
       prisma.userGame.count(),
     ]);
-    res.json({ ok: true, import: result, counts: { users: u, games: g, userGames: ug } });
+    res.json({ ok: true, message: 'Steam data synced successfully', counts: { users: u, games: g, userGames: ug } });
   } catch (err) {
     console.error('[Routes] /sync/import failed:', (err as Error).message);
-    res.status(500).json({ error: 'Import failed', details: (err as Error).message });
+    res.status(500).json({ error: 'Sync failed', details: (err as Error).message });
   }
 });

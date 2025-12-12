@@ -8,6 +8,10 @@ import { ChevronRight } from 'lucide-react';
 import { Recommendation } from '@game-tracker/shared';
 import { fetchDashboardData } from './actions';
 
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function DashboardPage() {
   const data = await fetchDashboardData();
   return (
@@ -24,7 +28,7 @@ export default async function DashboardPage() {
             <CardTitle>Recent games</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {data.playtime.recentGames.map((g) => (
+            {data.playtime.recentGames.map((g: { id: string; name: string; genres?: string[] }) => (
               <div key={g.id} className="flex items-center justify-between text-sm">
                 <span>{g.name}</span>
                 <Badge className="bg-secondary/50 text-foreground">{g.genres?.[0] ?? '—'}</Badge>
@@ -93,7 +97,7 @@ export default async function DashboardPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
-          {data.activity.map((item) => (
+          {data.activity.map((item: { id: string; description: string; createdAt: string | Date; type: string }) => (
             <div key={item.id} className="flex items-center justify-between rounded-lg bg-secondary/50 px-4 py-3 text-sm">
               <div>
                 <p className="font-medium">{item.description}</p>
