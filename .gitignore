@@ -64,3 +64,6 @@ coverage/
 
 # Miscellaneous
 *.tsbuildinfo
+__pycache__/
+*.pyc
+.venv/

@@ -78,7 +78,7 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Top genres</CardTitle>
+            <CardTitle>Most played games</CardTitle>
           </CardHeader>
           <CardContent>
             <TopGenresChart data={data.playtime.topGenres} />

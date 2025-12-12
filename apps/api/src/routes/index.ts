@@ -15,6 +15,7 @@ export const router = Router();
 
 const steamAuth = new SteamAuth(config.apiUrl, `${config.apiUrl}/auth/steam/return`);
 
+router.get('/', (_req, res) => res.json({ message: 'SteamStats API', status: 'ok' }));
 router.get('/health', (_req, res) => res.json({ ok: true }));
 
 router.post('/auth/register', AuthController.register);
@@ -92,6 +93,23 @@ router.get('/auth/steam/return', async (req, res) => {
     if (!user) throw new Error('Failed to resolve Steam user');
 
     const token = signToken({ userId: user.id, email: user.email, steamId });
+
+    // Generate dump and kick off sync in background (non-blocking)
+    (async () => {
+      try {
+        const { DumpService } = await import('../services/dump-service');
+        const { SyncService } = await import('../services/sync-service');
+        const dumpPath = await DumpService.generateDump(steamId);
+        if (dumpPath) {
+          console.log(`[Auth] Dump generated: ${dumpPath}`);
+        }
+        // Import from dump first (works even if Steam API returns 401), then try direct sync
+        await SyncService.importDump(user.id);
+        await SyncService.syncSteam(user.id);
+      } catch (bgErr) {
+        console.warn('[Auth] Post-login data sync failed (non-blocking):', (bgErr as Error).message);
+      }
+    })();
     res.redirect(`http://localhost:3000/auth/callback?token=${token}`);
   } catch (error) {
     console.error('Steam auth error:', error);
@@ -164,3 +182,28 @@ router.post('/friends/accept/:id', FriendsController.accept);
 router.delete('/friends/:friendId', FriendsController.remove);
 
 router.get('/matchmaking/recommendations', MatchmakingController.recommend);
+
+// Manual trigger to import dump into DB and return counts
+router.post('/sync/import', async (req, res) => {
+  try {
+    const { SyncService } = await import('../services/sync-service');
+    // Determine user: from query param, auth, or latest created
+    let userId = (req.query.userId as string) || req.user?.id;
+    if (!userId) {
+      const latest = await prisma.user.findFirst({ orderBy: { createdAt: 'desc' } });
+      userId = latest?.id;
+    }
+    if (!userId) return res.status(400).json({ error: 'No user available to import into' });
+    console.log(`[Routes] /sync/import starting for userId=${userId}`);
+    const result = await SyncService.importDump(userId);
+    const [u, g, ug] = await Promise.all([
+      prisma.user.count(),
+      prisma.game.count(),
+      prisma.userGame.count(),
+    ]);
+    res.json({ ok: true, import: result, counts: { users: u, games: g, userGames: ug } });
+  } catch (err) {
+    console.error('[Routes] /sync/import failed:', (err as Error).message);
+    res.status(500).json({ error: 'Import failed', details: (err as Error).message });
+  }
+});
