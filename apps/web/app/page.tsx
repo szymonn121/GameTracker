@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { Api } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { PlaytimeChart } from '../components/charts/playtime-chart';
@@ -9,7 +10,16 @@ import { ChevronRight } from 'lucide-react';
 import { Recommendation } from '@game-tracker/shared';
 
 async function getDashboard() {
-  return Api.dashboard();
+  const token = cookies().get('auth_token')?.value || process.env.NEXT_PUBLIC_API_TOKEN;
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000'}/dashboard`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || `Dashboard request failed: ${res.status}`);
+  }
+  return res.json();
 }
 
 export default async function DashboardPage() {

@@ -44,9 +44,9 @@ export interface GameDetailResponse {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  // Get token from localStorage (client-side) or env (server-side)
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('auth_token') 
+  // Get token from localStorage (client-side) or env override (server-side build-time)
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('auth_token')
     : process.env.NEXT_PUBLIC_API_TOKEN;
     
   const res = await fetch(`${apiBaseUrl}${path}`, {
