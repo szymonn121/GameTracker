@@ -4,7 +4,7 @@ import { SteamService } from './steam-service';
 import { logger } from '../logger';
 
 export class DumpService {
-  static async generateDump(steamId: string) {
+  static async generateDump(steamId: string, userId?: string) {
     try {
       const [profile, owned, recent] = await Promise.all([
         SteamService.getPlayerSummaries(steamId).catch(() => null),
@@ -42,8 +42,9 @@ export class DumpService {
         generatedAt: new Date().toISOString(),
       };
 
-      // Ensure dump is written to the workspace root (repo root)
-      const dumpPath = path.resolve(__dirname, '../../../../steam_dump.json');
+      // Ensure dump is written to the workspace root (per-user file)
+      const fileName = userId ? `steam_dump_${userId}.json` : `steam_dump_${steamId}.json`;
+      const dumpPath = path.resolve(__dirname, `../../../../${fileName}`);
 
       // If Steam API returned no data, avoid overwriting an existing Python-generated dump
       const hasData = (dump.owned_games && dump.owned_games.length > 0) || (dump.recent_games && dump.recent_games.length > 0);
@@ -53,7 +54,7 @@ export class DumpService {
       }
 
       await writeFile(dumpPath, JSON.stringify(dump, null, 2), 'utf-8');
-      logger.info({ owned: dump.totals.ownedCount }, `[DumpService] Dump written to ${dumpPath}`);
+      logger.info({ owned: dump.totals.ownedCount, userId }, `[DumpService] Dump written to ${dumpPath}`);
       return dumpPath;
     } catch (err) {
       logger.warn(`[DumpService] Failed to generate dump: ${(err as Error).message}`);

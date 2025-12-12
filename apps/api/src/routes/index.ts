@@ -99,7 +99,7 @@ router.get('/auth/steam/return', async (req, res) => {
       try {
         const { DumpService } = await import('../services/dump-service');
         const { SyncService } = await import('../services/sync-service');
-        const dumpPath = await DumpService.generateDump(steamId);
+        const dumpPath = await DumpService.generateDump(steamId, user.id);
         if (dumpPath) {
           console.log(`[Auth] Dump generated: ${dumpPath}`);
         }
@@ -168,7 +168,8 @@ router.get('/auth/me', authMiddleware, async (req, res) => {
 });
 
 // Temporarily public for demo (remove authMiddleware)
-router.get('/dashboard', DashboardController.get);
+// Require auth for dashboard to ensure per-user isolation
+router.get('/dashboard', authMiddleware, DashboardController.get);
 router.get('/profile', ProfileController.me);
 router.put('/profile', ProfileController.update);
 

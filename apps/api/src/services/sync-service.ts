@@ -43,10 +43,17 @@ export class SyncService {
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
-      const dumpPath = path.resolve(__dirname, '../../../../steam_dump.json');
+      // Read per-user dump first, then global fallback
+      const perUserDump = path.resolve(__dirname, `../../../../steam_dump_${userId}.json`);
+      const globalDump = path.resolve(__dirname, '../../../../steam_dump.json');
+      let dumpPath = perUserDump;
+      let exists = await fs.access(dumpPath).then(() => true).catch(() => false);
+      if (!exists) {
+        dumpPath = globalDump;
+        exists = await fs.access(dumpPath).then(() => true).catch(() => false);
+      }
       result.dumpPath = dumpPath;
       console.log(`[SyncService] Looking for dump at: ${dumpPath}`);
-      const exists = await fs.access(dumpPath).then(() => true).catch(() => false);
       if (!exists) {
         result.errors.push(`No dump file found at ${dumpPath}`);
         console.log(`[SyncService] ${result.errors[0]}`);
