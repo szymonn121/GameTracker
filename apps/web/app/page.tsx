@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { Api } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { PlaytimeChart } from '../components/charts/playtime-chart';
@@ -10,11 +11,19 @@ import { ChevronRight } from 'lucide-react';
 import { Recommendation } from '@game-tracker/shared';
 
 async function getDashboard() {
-  const token = cookies().get('auth_token')?.value || process.env.NEXT_PUBLIC_API_TOKEN;
+  const cookieStore = cookies();
+  const token = cookieStore.get('auth_token')?.value || process.env.NEXT_PUBLIC_API_TOKEN;
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000'}/dashboard`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     cache: 'no-store',
   });
+
+  if (res.status === 401 || res.status === 403) {
+    // Token is invalid or missing; clear it and force re-login so we get a fresh token/user.
+    cookieStore.set({ name: 'auth_token', value: '', path: '/', expires: new Date(0) });
+    redirect('/login?reason=reauth');
+  }
+
   if (!res.ok) {
     const msg = await res.text();
     throw new Error(msg || `Dashboard request failed: ${res.status}`);
