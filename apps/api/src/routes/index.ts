@@ -122,20 +122,14 @@ router.get('/auth/steam/return', async (req, res) => {
     const token = signToken({ userId: user.id, email: user.email, steamId });
     console.log(`[Auth] JWT created for userId: ${user.id}`);
 
-    // Step 5: Start background data sync (fetch games, generate dump, import)
+    // Step 5: Start background data sync (fetch games from Steam API)
     (async () => {
       try {
-        const { DumpService } = await import('../services/dump-service');
         const { SyncService } = await import('../services/sync-service');
 
         console.log(`[Auth] Starting background sync for userId: ${user.id}, steamId: ${steamId}`);
-        const dumpPath = await DumpService.generateDump(steamId, user.id);
-
-        if (dumpPath) {
-          console.log(`[Auth] ✓ Dump created: ${dumpPath}`);
-          await SyncService.importDump(user.id);
-          console.log(`[Auth] ✓ Games synced to database`);
-        }
+        await SyncService.syncSteam(user.id);
+        console.log(`[Auth] ✓ Games synced from Steam API to database`);
       } catch (syncErr) {
         console.warn('[Auth] Background sync failed (non-blocking):', (syncErr as Error).message);
       }

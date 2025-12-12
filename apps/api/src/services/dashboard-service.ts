@@ -1,7 +1,5 @@
 import { prisma } from '../db';
 import { SyncService } from './sync-service';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 
 export class DashboardService {
   static async getDashboard(userId: string) {
@@ -30,22 +28,7 @@ export class DashboardService {
     if (!user) throw new Error('User not found');
 
     // Compute metrics from DB
-    let totalHours = user.userGames.reduce((sum, ug) => sum + ug.hours, 0);
-    
-    // If DB is empty, try per-user dump once
-    if (totalHours === 0) {
-      const dumpPath = path.resolve(__dirname, `../../../../steam_dump_${userId}.json`);
-      if (fs.existsSync(dumpPath)) {
-        try {
-          const raw = fs.readFileSync(dumpPath, 'utf-8');
-          const dump = JSON.parse(raw) as { totals?: { playtime_hours?: number } };
-          totalHours = dump.totals?.playtime_hours || 0;
-          console.log(`[Dashboard] Loaded total hours from per-user dump: ${totalHours}`);
-        } catch (e) {
-          console.warn('[Dashboard] Failed to read per-user dump for total hours:', (e as Error).message);
-        }
-      }
-    }
+    const totalHours = user.userGames.reduce((sum, ug) => sum + ug.hours, 0);
     const monthlyHours = user.userGames
       .flatMap((ug) => {
         const data = typeof ug.playtimeByMonth === 'string' ? JSON.parse(ug.playtimeByMonth) : (ug.playtimeByMonth as unknown[] | undefined);
@@ -60,31 +43,12 @@ export class DashboardService {
     // Repurpose "topGenres" to carry most played games (name + hours)
     const userGamesAll = await prisma.userGame.findMany({ where: { userId }, include: { game: true } });
     
-    // If DB is empty, try to load from dump
-    let topGenres = userGamesAll
+    // Get top 5 most played games from database
+    const topGenres = userGamesAll
       .filter((ug) => ug.game && ug.game.name)
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 5)
       .map((ug) => ({ genre: ug.game!.name, hours: Math.round(ug.hours) }));
-
-    if (topGenres.length === 0) {
-      const dumpPath = path.resolve(__dirname, `../../../../steam_dump_${userId}.json`);
-      if (fs.existsSync(dumpPath)) {
-        try {
-          const raw = fs.readFileSync(dumpPath, 'utf-8');
-          const dump = JSON.parse(raw) as {
-            owned_games?: Array<{ appid: number; name?: string; playtime_forever_min?: number }>;
-          };
-          topGenres = (dump.owned_games || [])
-            .sort((a, b) => (b.playtime_forever_min || 0) - (a.playtime_forever_min || 0))
-            .slice(0, 5)
-            .map((g) => ({ genre: g.name || `Game ${g.appid}`, hours: Math.round((g.playtime_forever_min || 0) / 60) }));
-          console.log(`[Dashboard] Loaded ${topGenres.length} top games from per-user dump`);
-        } catch (e) {
-          console.warn('[Dashboard] Failed to read per-user dump:', (e as Error).message);
-        }
-      }
-    }
 
     const userGamesRecent = await prisma.userGame.findMany({
       where: { userId },
@@ -92,7 +56,7 @@ export class DashboardService {
       take: 10,
       include: { game: true }
     });
-    let recentGames = userGamesRecent
+    const recentGames = userGamesRecent
       .filter(ug => ug.game && ug.game.name && !ug.game.name.startsWith('Game '))
       .slice(0, 5)
       .map(ug => ({
@@ -100,30 +64,6 @@ export class DashboardService {
         name: ug.game.name,
         genres: typeof ug.game.genres === 'string' ? JSON.parse(ug.game.genres) : ug.game.genres || []
       }));
-
-    // If no recent games in DB, try to load from dump
-    if (recentGames.length === 0) {
-      const dumpPath = path.resolve(__dirname, `../../../../steam_dump_${userId}.json`);
-      if (fs.existsSync(dumpPath)) {
-        try {
-          const raw = fs.readFileSync(dumpPath, 'utf-8');
-          const dump = JSON.parse(raw) as {
-            recently_played?: Array<{ appid: number; name?: string; playtime_2weeks?: number }>;
-          };
-          recentGames = (dump.recently_played || [])
-            .filter((g) => (g.playtime_2weeks || 0) > 0)
-            .slice(0, 5)
-            .map((g) => ({
-              id: `steam:${g.appid}`,
-              name: g.name || `Game ${g.appid}`,
-              genres: []
-            }));
-          console.log(`[Dashboard] Loaded ${recentGames.length} recent games from per-user dump`);
-        } catch (e) {
-          console.warn('[Dashboard] Failed to read per-user dump for recent games:', (e as Error).message);
-        }
-      }
-    }
 
     const recommendations = await prisma.gameSimilarityCache.findMany({ take: 5 });
 
