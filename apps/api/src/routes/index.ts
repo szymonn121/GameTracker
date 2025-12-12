@@ -22,36 +22,39 @@ router.post('/auth/register', AuthController.register);
 router.post('/auth/login', AuthController.login);
 
 // Steam OpenID
+/**
+ * Step 1: Redirect user to Steam OpenID
+ * No authentication or API Key needed; Steam handles the authentication flow
+ */
 router.get('/auth/steam', (_req, res) => {
+  console.log('[Auth] Redirecting to Steam OpenID');
   const redirectUrl = steamAuth.getRedirectUrl();
   res.redirect(redirectUrl);
 });
 
+/**
+ * Step 2: Handle Steam OpenID callback
+ *
+ * Flow:
+ * 1. OpenID extracts steamid from Steam response
+ * 2. Find or create user in our DB (indexed by steamId)
+ * 3. Fetch profile data using the server's API Key (non-blocking)
+ * 4. Create JWT token containing userId + steamId
+ * 5. Redirect to frontend with token; frontend stores it for API auth
+ */
 router.get('/auth/steam/return', async (req, res) => {
   try {
+    // Step 1: OpenID returns steamid (NOT API-authenticated; just extracted from Steam response)
     const steamId = await steamAuth.verifyAssertion(req.query as Record<string, string>);
     
     if (!steamId) {
+      console.error('[Auth] OpenID verification failed');
       return res.redirect('http://localhost:3000/login?error=auth_failed');
     }
 
-    console.log(`[Steam Auth] User logged in: ${steamId}`);
+    console.log(`[Auth] ✓ Verified steamId: ${steamId}`);
 
-    // Pobierz dane użytkownika ze Steam API (opcjonalne - nie blokuj logowania jeśli API zwraca błąd)
-    const { SteamService } = await import('../services/steam-service');
-    let playerSummary = null;
-    
-    try {
-      playerSummary = await SteamService.getPlayerSummaries(steamId);
-      if (!playerSummary) {
-        console.warn('[Steam Auth] Could not fetch player summary - Steam API may be down or key invalid');
-      }
-    } catch (apiError) {
-      console.error('[Steam Auth] Steam API error (non-blocking):', (apiError as Error).message);
-      // Kontynuuj logowanie nawet jeśli Steam API nie działa
-    }
-
-    // Find or create user
+    // Step 2: Find or create user in our database
     let user = await prisma.user.findFirst({
       where: { 
         OR: [
@@ -63,61 +66,87 @@ router.get('/auth/steam/return', async (req, res) => {
     });
 
     if (!user) {
+      console.log(`[Auth] Creating new user for steamId: ${steamId}`);
       user = await prisma.user.create({
         data: {
           email: `${steamId}@steam.local`,
-          passwordHash: '',
+          passwordHash: '', // Steam users have no password
           profile: {
             create: {
-              displayName: playerSummary?.personaname || `Player_${steamId.slice(-6)}`,
-              avatarUrl: playerSummary?.avatarfull || playerSummary?.avatarmedium
+              displayName: `Player_${steamId.slice(-6)}`,
+              avatarUrl: null
             }
           },
           apiTokens: {
-            create: { steamId }
+            create: { steamId } // Store steamId so we can fetch their data
           }
         },
         include: { apiTokens: true, profile: true }
       });
-    } else if (playerSummary) {
-      // Aktualizuj profil użytkownika danymi ze Steam (jeśli udało się pobrać)
-      await prisma.userProfile.update({
-        where: { userId: user.id },
-        data: {
-          displayName: playerSummary.personaname || user.profile?.displayName,
-          avatarUrl: playerSummary.avatarfull || playerSummary.avatarmedium || user.profile?.avatarUrl
-        }
-      });
+    } else {
+      console.log(`[Auth] User exists for steamId: ${steamId}`);
     }
 
-    if (!user) throw new Error('Failed to resolve Steam user');
+    if (!user) throw new Error('Failed to create/find user');
 
+    // Step 3: Fetch fresh profile data using server's API Key (non-blocking)
+    // This enriches the user profile but does NOT block login
+    (async () => {
+      try {
+        const { SteamService } = await import('../services/steam-service');
+        const summary = await SteamService.getPlayerSummaries(steamId);
+        if (summary && summary.personaname) {
+          console.log(`[Auth] Updating profile for ${steamId} with name: ${summary.personaname}`);
+          await prisma.userProfile.update({
+            where: { userId: user.id },
+            data: {
+              displayName: summary.personaname,
+              avatarUrl: summary.avatarfull || summary.avatarmedium || null
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('[Auth] Profile update failed (non-blocking):', (err as Error).message);
+      }
+    })();
+
+    // Step 4: Create JWT token
+    // This token proves the user is authenticated and contains their userId + steamId
     const token = signToken({ userId: user.id, email: user.email, steamId });
 
-    // Generate dump and kick off sync in background (non-blocking)
+    // Step 5: Start background sync using the steamId stored in the token
+    // This syncs the user's Steam games into our database (non-blocking)
     (async () => {
       try {
         const { DumpService } = await import('../services/dump-service');
         const { SyncService } = await import('../services/sync-service');
+        console.log(`[Auth] Starting background sync for userId: ${user.id}, steamId: ${steamId}`);
         const dumpPath = await DumpService.generateDump(steamId, user.id);
         if (dumpPath) {
-          console.log(`[Auth] Dump generated: ${dumpPath}`);
+          console.log(`[Auth] ✓ Dump generated: ${dumpPath}`);
         }
-        // Import from dump first (works even if Steam API returns 401), then try direct sync
         await SyncService.importDump(user.id);
-        await SyncService.syncSteam(user.id);
+        console.log(`[Auth] ✓ Sync complete for userId: ${user.id}`);
       } catch (bgErr) {
-        console.warn('[Auth] Post-login data sync failed (non-blocking):', (bgErr as Error).message);
+        console.warn('[Auth] Post-login sync failed (non-blocking):', (bgErr as Error).message);
       }
     })();
+
+    // Step 6: Redirect to frontend with token
+    console.log(`[Auth] ✓ Login complete for userId: ${user.id}, steamId: ${steamId}`);
     res.redirect(`http://localhost:3000/auth/callback?token=${token}`);
   } catch (error) {
-    console.error('Steam auth error:', error);
+    console.error('[Auth] Unexpected error:', error);
     res.redirect('http://localhost:3000/login?error=server_error');
   }
 });
 
-// Endpoint do pobierania danych zalogowanego użytkownika Steam
+/**
+ * Get current logged-in user info
+ * Requires: Valid JWT token in Authorization header
+ *
+ * Returns: Profile + games from DB (uses steamId from token to fetch data)
+ */
 router.get('/auth/me', authMiddleware, async (req, res) => {
   try {
     const userId = req.user?.id;
