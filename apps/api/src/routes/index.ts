@@ -307,8 +307,8 @@ router.get('/dashboard', authMiddleware, DashboardController.get);
 router.get('/profile', ProfileController.me);
 router.put('/profile', ProfileController.update);
 
-router.get('/games', GamesController.list);
-router.get('/games/:id', GamesController.detail);
+router.get('/games', authMiddleware, GamesController.list);
+router.get('/games/:id', authMiddleware, GamesController.detail);
 
 router.get('/friends', FriendsController.list);
 router.get('/friends/requests', FriendsController.sendRequest);

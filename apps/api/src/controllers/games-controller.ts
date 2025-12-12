@@ -6,7 +6,8 @@ export const GamesController = {
   list: async (req: AuthRequest, res: Response) => {
     try {
       const page = parseInt((req.query.page as string) || '1', 10);
-      const data = await GameService.list(page);
+      const userId = req.user?.id;
+      const data = await GameService.list(page, 20, userId);
       console.log(`[GamesController] Returning ${data.items.length} games for page ${page}`);
       res.json(data);
     } catch (err) {

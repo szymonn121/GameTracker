@@ -46,6 +46,7 @@ export interface GameSummary {
   summary?: string;
   rating?: number;
   releaseDate?: string;
+  playtime?: { hours?: number };
 }
 
 export interface PlaytimeStats {

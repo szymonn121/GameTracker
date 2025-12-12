@@ -65,11 +65,36 @@ export class GameService {
     return { game, hltb, similar, playtime: { hours: playtime._sum.hours || 0 } };
   }
 
-  static async list(page: number, pageSize = 20) {
+  static async list(page: number, pageSize = 20, userId?: string) {
+    console.log(`[GameService.list] Fetching games for userId: ${userId}`);
     const [items, total] = await prisma.$transaction([
       prisma.game.findMany({ skip: (page - 1) * pageSize, take: pageSize, orderBy: { updatedAt: 'desc' } }),
       prisma.game.count()
     ]);
-    return { items, hasMore: page * pageSize < total };
+    
+    // Fetch playtime for each game if userId is provided
+    let itemsWithPlaytime = items;
+    if (userId) {
+      console.log(`[GameService.list] Fetching playtime for ${items.length} games`);
+      itemsWithPlaytime = await Promise.all(
+        items.map(async (game) => {
+          const userGame = await prisma.userGame.findUnique({
+            where: { userId_gameId: { userId, gameId: game.id } }
+          });
+          return {
+            ...game,
+            playtime: userGame ? { hours: userGame.hours } : { hours: 0 }
+          };
+        })
+      );
+    } else {
+      console.log(`[GameService.list] No userId provided, skipping playtime fetch`);
+      itemsWithPlaytime = items.map(game => ({
+        ...game,
+        playtime: { hours: 0 }
+      }));
+    }
+    
+    return { items: itemsWithPlaytime, hasMore: page * pageSize < total };
   }
 }
