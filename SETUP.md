@@ -43,10 +43,10 @@ npm run type-check                   # TypeScript type checking
 
 ## Database Setup
 
-By default, the application uses **SQLite** for local development, which requires no setup. For production, use PostgreSQL.
+By default, the application uses **PostgreSQL** (configured in `.env`). You can still use SQLite for local experiments, but the active setup in this repo targets PostgreSQL.
 
-### Development (SQLite - Default)
-No setup required. Database file is created automatically at `apps/api/prisma/dev.db`.
+### Development (PostgreSQL - Default)
+Use a local PostgreSQL instance (Docker recommended) or a managed service. The connection string is configured via `DATABASE_URL` in `.env`.
 
 ### Production (PostgreSQL)
 
@@ -95,12 +95,12 @@ cp .env.example .env
 
 Edit `.env`:
 ```env
-# Database (SQLite for dev, PostgreSQL for production)
-DATABASE_URL=file:./apps/api/prisma/dev.db
-# OR for PostgreSQL:
-# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/game_tracker
+# Database (PostgreSQL default)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/game_tracker
 
 # Required: Get from https://steamcommunity.com/dev/apikey
+# This key is used ONLY on the backend. Users do not need
+# their own key; they authenticate via Steam OpenID.
 STEAM_API_KEY=your-steam-web-api-key
 
 # Authentication secret (change in production!)
@@ -131,7 +131,7 @@ $env:STEAM_API_KEY = "your-key-here"
 python scripts/steam_dump.py
 ```
 
-This creates `steam_dump.json` which is automatically imported when you log in.
+This creates `steam_dump.json`. Note: The app no longer falls back to a global dump for logged-in users. During login, data is fetched per-user from Steam using their unique `steamId`. You can still use per-user dumps named `steam_dump_<userId>.json` for local testing if needed.
 
 ## Login Flow
 
@@ -139,8 +139,9 @@ This creates `steam_dump.json` which is automatically imported when you log in.
 2. Complete Steam OpenID authentication
 3. Backend automatically:
    - Creates/updates your user account
-   - Generates `steam_dump.json` with your library data
-   - Imports games into the database
+   - Retrieves your `steamId` via Steam OpenID
+   - Fetches your library and profile from Steam Web API using the server's global `STEAM_API_KEY`
+   - Imports games into the database (data is isolated per user)
 4. Dashboard displays your games and playtime metrics
 5. Data persists across sessions
 
@@ -152,10 +153,10 @@ This creates `steam_dump.json` which is automatically imported when you log in.
 - Restart the dev server after changing `.env`
 
 ### "No games showing on dashboard"
-- Log in again to trigger data import
-- Check API logs for import status
-- Verify Steam API key is valid
-- Database should populate automatically after login
+- Log in again to trigger per-user sync
+- Check API logs for sync status (look for your `steamId`)
+- Verify `STEAM_API_KEY` is present in `.env` and valid
+- Database should populate automatically after login; no global dump is used
 
 ### Port already in use (3000 or 4000)
 - Change `PORT` in `.env` for API
@@ -168,10 +169,10 @@ This creates `steam_dump.json` which is automatically imported when you log in.
 ## Production Deployment
 
 1. **Set environment variables:**
-   - Use PostgreSQL (not SQLite)
+   - Use PostgreSQL
    - Set strong `JWT_SECRET`
    - Update `NEXT_PUBLIC_API_BASE_URL` to your domain
-   - Ensure `STEAM_OPENID_REALM` matches your domain
+   - Ensure any Steam OpenID realm or return URLs match your domain
 
 2. **Build for production:**
 ```powershell
@@ -189,8 +190,16 @@ npm run start
 The application supports multiple concurrent users:
 - Each user logs in independently via Steam
 - Data is isolated by user ID in the database
-- No shared demo data interferes with production users
+- No shared demo data interferes with users; global dump fallback is removed
 - Suitable for public hosting
+
+## Git Hygiene
+
+- Add ephemeral/local files to `.gitignore`:
+   - `*.db` (local SQLite files)
+   - `node_modules/`
+   - `.env.local`
+   - `steam_dump.json` (if generated locally)
 
 
 Visit http://localhost:3001 to see the dashboard!
