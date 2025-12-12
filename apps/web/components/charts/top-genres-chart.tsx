@@ -22,7 +22,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function TopGenresChart({ data }: Props) {
   return (
-    <div className="h-64 w-full">
+    <div className="h-80 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2a44" />

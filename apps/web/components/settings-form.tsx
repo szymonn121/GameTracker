@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { Badge } from './ui/badge';
 import { Api } from '../lib/api';
 import { UserProfile } from '@game-tracker/shared';
 
@@ -35,6 +33,8 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
     }
   };
 
+  const isSuccess = message.toLowerCase().includes('success') || message.toLowerCase().includes('saved');
+
   return (
     <div className="space-y-4">
       <div>
@@ -43,72 +43,63 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
       </div>
 
       {message && (
-        <div className={`rounded-lg p-3 ${message.includes('success') || message.includes('saved') ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+        <div className={`rounded-lg p-3 text-sm ${isSuccess ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
           {message}
         </div>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+          <CardTitle>Profile & Bio</CardTitle>
+          <p className="text-sm text-muted-foreground">Display name and avatar stay synced with Steam. Bio is shared with friends.</p>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <label className="text-xs text-muted-foreground">Display name</label>
-            <Input 
-              value={profile.displayName} 
-              disabled
-              placeholder="Synced from Steam" 
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Your name is automatically synced from your Steam profile
-            </p>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-secondary/50 p-3">
+            <p className="text-xs uppercase text-muted-foreground">Display name</p>
+            <p className="text-sm font-semibold">{profile.displayName || 'Synced from Steam'}</p>
+            <p className="text-xs text-muted-foreground">Managed by Steam. Update there to change here.</p>
           </div>
-          <div>
+
+          <div className="rounded-lg bg-secondary/50 p-3">
+            <p className="text-xs uppercase text-muted-foreground">Avatar</p>
+            {profile.avatarUrl ? (
+              <a href={profile.avatarUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-primary hover:underline">
+                Open current avatar
+              </a>
+            ) : (
+              <p className="text-sm font-semibold">Synced from Steam</p>
+            )}
+            <p className="text-xs text-muted-foreground">Managed by Steam. Update there to change here.</p>
+          </div>
+
+          <div className="space-y-2">
             <label className="text-xs text-muted-foreground">Bio</label>
-            <Textarea 
-              value={profile.bio || ''} 
+            <Textarea
+              value={profile.bio || ''}
               onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-              placeholder="Tell us about yourself..." 
-              rows={4} 
+              placeholder="Tell us about yourself..."
+              rows={4}
             />
+            <p className="text-xs text-muted-foreground">Keep it short and friendly. Shared with friends.</p>
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Avatar</label>
-            <Input 
-              value={profile.avatarUrl || ''} 
-              disabled
-              placeholder="Synced from Steam" 
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Avatar is automatically synced from your Steam profile
-            </p>
+
+          <div className="flex justify-end">
+            <Button onClick={handleSaveProfile} disabled={saving}>
+              {saving ? 'Saving...' : 'Save bio'}
+            </Button>
           </div>
-          <Button onClick={handleSaveProfile} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Profile'}
-          </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Notifications</CardTitle>
+          <CardTitle>Account sync</CardTitle>
+          <p className="text-sm text-muted-foreground">Steam data refreshes on login. Display name and avatar are read-only.</p>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
-            <div>
-              <p className="font-medium">Friend activity</p>
-              <p className="text-xs text-muted-foreground">Alerts for achievements and milestones</p>
-            </div>
-            <Badge className="bg-primary/20 text-primary-foreground">Enabled</Badge>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
-            <div>
-              <p className="font-medium">Weekly summary</p>
-              <p className="text-xs text-muted-foreground">Email digest of playtime</p>
-            </div>
-            <Badge className="bg-secondary/70 text-foreground">Disabled</Badge>
-          </div>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>• Display name and avatar come from Steam and cannot be edited here.</p>
+          <p>• Bio is editable above and shown to your friends.</p>
+          <p>• If something looks outdated, log out and log back in to resync.</p>
         </CardContent>
       </Card>
     </div>
