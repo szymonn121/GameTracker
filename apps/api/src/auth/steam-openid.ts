@@ -1,17 +1,23 @@
 /**
  * Steam OpenID 2.0 Authentication Handler
  *
- * Role: Extract steamid from Steam's OpenID response
+ * Role: Extract steamid64 from Steam's OpenID response
  * - Does NOT identify the user in our system
- * - Does NOT require API Key
- * - Returns pure steamid (e.g., "76561198000000000")
+ * - Does NOT require API Key (OpenID is authentication-only)
+ * - Returns pure steamid64 (e.g., "76561198000000000")
  *
  * Flow:
  * 1. User clicks "Login with Steam"
- * 2. Redirect to Steam OpenID
+ * 2. Redirect to Steam OpenID endpoint
  * 3. Steam redirects back with openid.* parameters
- * 4. We extract steamid from openid.claimed_id
- * 5. Return steamid to route handler
+ * 4. We validate the response cryptographically
+ * 5. Extract steamid64 from openid.claimed_id
+ * 6. Return steamid64 to route handler
+ *
+ * After OpenID validation, the backend will:
+ * - Create or find user in database
+ * - Use server's global API key to fetch their profile/games
+ * - Issue JWT token containing steamid64
  */
 
 import https from 'https';
@@ -34,6 +40,8 @@ export class SteamAuth {
   /**
    * Generate redirect URL for Steam OpenID login.
    * User's browser is redirected here; Steam handles authentication.
+   *
+   * @returns Full URL to redirect user to Steam OpenID
    */
   getRedirectUrl(): string {
     const params = {
@@ -53,7 +61,11 @@ export class SteamAuth {
   }
 
   /**
-   * Verify Steam OpenID response and extract steamid.
+   * Verify Steam OpenID response and extract steamid64.
+   *
+   * This performs two checks:
+   * 1. Validates the openid.mode is 'id_res' (successful authentication)
+   * 2. Validates with Steam servers using cryptographic verification
    *
    * @param params Query parameters from Steam's redirect
    * @returns Steam ID (string of digits) or null if verification fails
@@ -63,8 +75,13 @@ export class SteamAuth {
   async verifyAssertion(params: SteamOpenIDParams): Promise<string | null> {
     try {
       // Validate required parameters
+      if (!params['openid.mode']) {
+        console.warn('[OpenID] Missing openid.mode');
+        return null;
+      }
+
       if (params['openid.mode'] !== 'id_res') {
-        console.warn('[OpenID] Invalid openid.mode:', params['openid.mode']);
+        console.warn('[OpenID] Invalid openid.mode (expected "id_res"):', params['openid.mode']);
         return null;
       }
 
@@ -74,16 +91,16 @@ export class SteamAuth {
         return null;
       }
 
-      // Extract steamid from URL like: https://steamcommunity.com/openid/id/76561198000000000
+      // Extract steamid64 from URL like: https://steamcommunity.com/openid/id/76561198000000000
       const steamIdMatch = claimedId.match(/^https?:\/\/steamcommunity\.com\/openid\/id\/(\d+)$/);
       if (!steamIdMatch || !steamIdMatch[1]) {
-        console.warn('[OpenID] Could not extract steamid from:', claimedId);
+        console.warn('[OpenID] Could not extract steamid from claimed_id:', claimedId);
         return null;
       }
 
       const steamId = steamIdMatch[1];
 
-      // Verify authenticity with Steam
+      // Verify authenticity with Steam servers
       const verifyParams = { ...params };
       verifyParams['openid.mode'] = 'check_authentication';
 
@@ -93,7 +110,7 @@ export class SteamAuth {
         return null;
       }
 
-      console.log(`[OpenID] Successfully verified steamid: ${steamId}`);
+      console.log(`[OpenID] ✓ Successfully verified steamid64: ${steamId}`);
       return steamId;
     } catch (error) {
       console.error('[OpenID] Verification error:', error);
@@ -103,6 +120,11 @@ export class SteamAuth {
 
   /**
    * Perform cryptographic verification with Steam servers.
+   *
+   * This sends the OpenID response back to Steam to verify it's genuine.
+   *
+   * @param params OpenID parameters with mode set to 'check_authentication'
+   * @returns true if Steam confirms the response is valid
    */
   private performSteamValidation(params: SteamOpenIDParams): Promise<boolean> {
     return new Promise((resolve) => {

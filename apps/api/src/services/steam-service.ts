@@ -138,7 +138,67 @@ export class SteamService {
   }
 
   /**
-   * Get game details from Steam Store.
+   * Get player stats for a specific game.
+   * Returns achievement progress, hours played, and other game-specific stats.
+   *
+   * @param steamId - The target Steam user ID
+   * @param appId - Steam app ID (game ID)
+   * @returns Player stats object or null if unavailable or profile is private
+   *
+   * Errors:
+   * - 403: Profile is private
+   * - 404: Game not found or no stats available
+   */
+  static async getPlayerStats(steamId: string, appId: number) {
+    if (!steamId) throw new Error('steamId is required');
+    if (!appId || appId <= 0) throw new Error('Valid appId is required');
+
+    const cacheKey = `steam:stats:${steamId}:${appId}`;
+    const cached = await CacheService.get<unknown>(cacheKey);
+    if (cached) {
+      console.log(`[SteamService] Player stats cache hit for ${steamId}, appid: ${appId}`);
+      return cached;
+    }
+
+    console.log(`[SteamService] Fetching player stats for steamId: ${steamId}, appid: ${appId}`);
+    const url = `${STEAM_BASE}/ISteamUserStats/GetUserStatsForGame/v0002/?key=${this.key}&steamid=${steamId}&appid=${appId}&format=json`;
+
+    try {
+      const { data } = await axios.get(url, { timeout: 10000 });
+
+      // Check for error response
+      if (data.playerstats?.error) {
+        console.warn(`[SteamService] Stats error for ${steamId}, appid: ${appId}: ${data.playerstats.error}`);
+        return null;
+      }
+
+      const stats = data.playerstats || null;
+
+      if (!stats) {
+        console.warn(`[SteamService] No stats found for ${steamId}, appid: ${appId}`);
+        return null;
+      }
+
+      await CacheService.set(cacheKey, stats, 3600, 'steam');
+      console.log(`[SteamService] Fetched stats for ${steamId}, appid: ${appId}`);
+      return stats;
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        console.warn(`[SteamService] Profile for ${steamId} is private (403)`);
+        throw new Error('403: Profile is private');
+      } else if (error.response?.status === 404) {
+        console.warn(`[SteamService] Game not found for appid: ${appId}`);
+        throw new Error('404: Game not found or no stats available');
+      } else if (error.response?.status === 401) {
+        console.error('[SteamService] API Key invalid');
+        throw new Error('401: API Key invalid');
+      }
+      console.error(`[SteamService] Failed to fetch player stats: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * NOTE: Store API is public; does not need API Key.
    *
    * @param appId - Steam app ID (e.g., 570 for Dota 2)
