@@ -135,4 +135,13 @@ model Settings {
   weeklySummary      Boolean  @default(false)
 }
 
-model ApiToken {\n  id        String   @id @default(cuid())\n  user      User     @relation(fields: [userId], references: [id])\n  userId    String   @unique\n  steamId   String?  @unique // Index for fast lookups when user logs in via OpenID\n  steamKey  String?  // Deprecated: DO NOT use per-user API keys\n  igdbClientId String?\n  igdbClientSecret String?\n  createdAt DateTime @default(now())\n}
+model ApiToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  steamId   String?  @unique // Index for fast lookups when user logs in via OpenID
+  steamKey  String?  // Deprecated: DO NOT use per-user API keys
+  igdbClientId String?
+  igdbClientSecret String?
+  createdAt DateTime @default(now())
+}
