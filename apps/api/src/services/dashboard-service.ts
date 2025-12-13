@@ -44,14 +44,6 @@ export class DashboardService {
       }
     }
 
-    // If no monthly data exists yet, attribute current total to this month as a starting point
-    if (Object.keys(monthlyAggregate).length === 0 && totalHours > 0) {
-      const now = new Date();
-      const currentMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-      monthlyAggregate[currentMonth] = totalHours;
-      console.log(`[Dashboard] No monthly data found, attributing ${totalHours} hours to ${currentMonth}`);
-    }
-
     // Build last 12 months chronologically (oldest first) to feed the chart
     const now = new Date();
     const monthKeys = Array.from({ length: 12 }, (_, i) => {

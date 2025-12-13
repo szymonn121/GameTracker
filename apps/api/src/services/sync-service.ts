@@ -27,6 +27,7 @@ export class SyncService {
       const existing = await prisma.userGame.findUnique({ where: { userId_gameId: { userId, gameId } } });
       const previousHours = existing?.hours ?? 0;
       const newHours = g.playtime_forever / 60;
+      const twoWeekHours = (g.playtime_2weeks ?? 0) / 60;
 
       // Build monthly map and attribute only the delta since last sync to the current month
       let playtimeByMonth: Record<string, number> = {};
@@ -47,7 +48,11 @@ export class SyncService {
       const now = new Date();
       const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
       const delta = newHours - previousHours;
-      if (delta > 0) {
+      
+      // On first sync with no existing data, use 2-week playtime if available (more accurate than total)
+      if (!existing && twoWeekHours > 0) {
+        playtimeByMonth[monthKey] = twoWeekHours;
+      } else if (delta > 0) {
         playtimeByMonth[monthKey] = (playtimeByMonth[monthKey] ?? 0) + delta;
       }
 
@@ -74,13 +79,7 @@ export class SyncService {
           gameId,
           hours: newHours,
           lastPlayed: g.rtime_last_played ? new Date(g.rtime_last_played * 1000) : undefined,
-          playtimeByMonth: JSON.stringify(
-            newHours > 0
-              ? {
-                  [monthKey]: newHours
-                }
-              : {}
-          )
+          playtimeByMonth: JSON.stringify(playtimeByMonth)
         }
       });
     }
