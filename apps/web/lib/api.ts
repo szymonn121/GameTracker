@@ -14,6 +14,13 @@ export interface FriendListItem {
   status?: string;
 }
 
+export interface FriendSearchResult {
+  id: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  status: 'friend' | 'pending' | 'incoming' | 'can_invite';
+}
+
 export interface MatchSuggestion {
   userId: string;
   displayName?: string | null;
@@ -76,6 +83,7 @@ export const Api = {
     method: 'POST',
     body: JSON.stringify({ toUserId: userId })
   }),
+  searchFriends: (name: string) => request<FriendSearchResult[]>(`/friends/search?q=${encodeURIComponent(name)}`),
   profile: () => request<UserProfile>('/profile'),
   updateProfile: (data: Partial<UserProfile>) => request<UserProfile>('/profile', {
     method: 'PUT',

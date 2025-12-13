@@ -18,6 +18,15 @@ export function PlaytimeChart({ data }: Props) {
     );
   };
 
+  const formatMonth = (value: string) => {
+    const parts = value.split('-');
+    if (parts.length === 2) {
+      const monthNum = parseInt(parts[1], 10);
+      if (!Number.isNaN(monthNum)) return monthNum.toString();
+    }
+    return value;
+  };
+
   // Check if all data is zero
   const hasData = data.some(d => d.hours > 0);
 
@@ -39,7 +48,7 @@ export function PlaytimeChart({ data }: Props) {
                 <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="month" stroke="var(--muted-foreground)" />
+            <XAxis dataKey="month" stroke="var(--muted-foreground)" tickFormatter={formatMonth} />
             <YAxis stroke="var(--muted-foreground)" tickFormatter={(value) => Math.round(value).toString()} />
             <Tooltip content={<CustomTooltip />} />
             <Area type="monotone" dataKey="hours" stroke="var(--primary)" fillOpacity={1} fill="url(#colorHours)" />

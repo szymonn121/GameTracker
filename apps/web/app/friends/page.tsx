@@ -2,7 +2,8 @@ import { Api, FriendListItem, FriendRequestItem } from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { UserIcon, Check, X } from 'lucide-react';
+import { UserIcon, Check, X, UserPlus } from 'lucide-react';
+import { FriendsAdd } from '../../components/friends-add';
 
 async function getData() {
   const [friends, requests] = await Promise.all([Api.friends(), Api.friendRequests()]);
@@ -17,6 +18,18 @@ export default async function FriendsPage() {
         <p className="text-sm uppercase text-muted-foreground">Social</p>
         <h1 className="text-2xl font-bold">Friends</h1>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Add a friend
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FriendsAdd />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

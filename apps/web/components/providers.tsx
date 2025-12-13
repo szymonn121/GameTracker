@@ -24,22 +24,24 @@ export function useTheme() {
 
 export function Providers({ children }: ProvidersProps) {
   const [client] = useState(() => new QueryClient());
-  const [theme, setThemeState] = useState<Theme>('cyber-blue');
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'cyber-blue';
+    const saved = localStorage.getItem('theme') as Theme | null;
+    return saved ?? 'cyber-blue';
+  });
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme') as Theme;
-    if (saved) setThemeState(saved);
-  }, []);
+    // Ensure the HTML attribute matches the current theme on mount
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme);
+    }
   };
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
 
   return (
     <QueryClientProvider client={client}>

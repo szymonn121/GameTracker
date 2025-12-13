@@ -26,6 +26,49 @@ export const FriendsController = {
     const requests = await prisma.friendRequest.findMany({ where: { toUserId: userId }, include: { fromUser: { include: { profile: true } } } });
     res.json(requests.map((r) => ({ id: r.id, from: { displayName: r.fromUser.profile?.displayName, email: r.fromUser.email }, status: r.status })));
   },
+  search: async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id || DEFAULT_USER_ID;
+    const q = (req.query.q as string | undefined)?.trim();
+    if (!q) return res.json([]);
+
+    // Collect existing friendships and pending requests to annotate results
+    const [friends, requests] = await Promise.all([
+      prisma.friend.findMany({ where: { OR: [{ userId }, { friendId: userId }] } }),
+      prisma.friendRequest.findMany({ where: { OR: [{ fromUserId: userId }, { toUserId: userId }] } })
+    ]);
+
+    const friendIds = new Set<string>();
+    friends.forEach((f) => {
+      friendIds.add(f.userId === userId ? f.friendId : f.userId);
+    });
+
+    const pendingTo = new Set(requests.filter((r) => r.fromUserId === userId).map((r) => r.toUserId));
+    const pendingFrom = new Set(requests.filter((r) => r.toUserId === userId).map((r) => r.fromUserId));
+
+    const matches = await prisma.userProfile.findMany({
+      where: {
+        displayName: { contains: q, mode: 'insensitive' },
+        userId: { not: userId }
+      },
+      select: { userId: true, displayName: true, avatarUrl: true },
+      take: 10
+    });
+
+    const results = matches.map((m) => {
+      let status: 'friend' | 'pending' | 'incoming' | 'can_invite' = 'can_invite';
+      if (friendIds.has(m.userId)) status = 'friend';
+      else if (pendingTo.has(m.userId)) status = 'pending';
+      else if (pendingFrom.has(m.userId)) status = 'incoming';
+      return {
+        id: m.userId,
+        displayName: m.displayName,
+        avatarUrl: m.avatarUrl,
+        status
+      };
+    });
+
+    res.json(results);
+  },
   request: async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id || DEFAULT_USER_ID;
     const { toUserId } = req.body;

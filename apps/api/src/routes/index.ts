@@ -328,6 +328,7 @@ router.get('/friends/requests', FriendsController.sendRequest);
 router.post('/friends/requests', FriendsController.request);
 router.post('/friends/accept/:id', FriendsController.accept);
 router.delete('/friends/:friendId', FriendsController.remove);
+router.get('/friends/search', FriendsController.search);
 
 router.get('/matchmaking/recommendations', MatchmakingController.recommend);
 
