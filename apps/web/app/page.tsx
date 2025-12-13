@@ -72,7 +72,7 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Monthly playtime</CardTitle>
           </CardHeader>
-          <CardContent className="pt-2 pb-4">
+          <CardContent>
             <PlaytimeChart data={data.playtime.monthlyHours} />
           </CardContent>
         </Card>
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Most played games</CardTitle>
           </CardHeader>
-          <CardContent className="pt-2 pb-4">
+          <CardContent>
             <TopGenresChart data={data.playtime.topGenres} />
           </CardContent>
         </Card>

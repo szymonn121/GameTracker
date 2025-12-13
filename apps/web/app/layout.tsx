@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '../components/providers';
-import { Nav } from '../components/nav';
+import { Shell } from './shell';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,8 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.className} bg-background text-foreground`}>
         <Providers>
-          <Nav />
-          <main className="mx-auto max-w-6xl px-4 pb-10 pt-6">{children}</main>
+          <Shell>{children}</Shell>
         </Providers>
       </body>
     </html>

@@ -39,28 +39,23 @@ const sortGames = (games: GameSummary[], sortBy: SortType): GameSummary[] => {
 };
 
 export function GameList() {
+  const [page, setPage] = useState(1);
   const [games, setGames] = useState<GameSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState<SortType>('playtime');
 
-  const loadAllGames = async () => {
+  const load = async () => {
+    if (loading || !hasMore) return;
     setLoading(true);
     try {
-      let allGames: GameSummary[] = [];
-      let page = 1;
-      let hasMore = true;
-
-      // Load all games by fetching all pages
-      while (hasMore) {
-        const res = await Api.games(page);
-        allGames = [...allGames, ...res.items];
-        hasMore = res.hasMore;
-        page++;
-      }
-
-      // Sort games by current sort preference
-      const sorted = sortGames(allGames, sortBy);
+      const res = await Api.games(page);
+      const newGames = [...games, ...res.items];
+      // Sort based on current sort preference
+      const sorted = sortGames(newGames, sortBy);
       setGames(sorted);
+      setHasMore(res.hasMore);
+      setPage((p) => p + 1);
     } catch (err) {
       console.error('Failed to load games:', err);
     } finally {
@@ -69,13 +64,13 @@ export function GameList() {
   };
 
   const handleSortChange = (newSort: SortType) => {
-    if (newSort === sortBy) return;
+    if (newSort === sortBy) return; // Prevent unnecessary re-renders
     setSortBy(newSort);
     setGames(prev => sortGames(prev, newSort));
   };
 
   useEffect(() => {
-    loadAllGames();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -109,11 +104,6 @@ export function GameList() {
             <p className="text-muted-foreground">
               No games yet. Go to <Link href="/settings" className="underline">Settings</Link> to connect your Steam account.
             </p>
-          </div>
-        )}
-        {loading && (
-          <div className="flex justify-center py-8">
-            <p className="text-muted-foreground">Loading all games...</p>
           </div>
         )}
         {games.map((game) => (
@@ -157,6 +147,13 @@ export function GameList() {
             </CardContent>
           </Card>
         ))}
+        {hasMore && (
+          <div className="flex justify-center pt-2">
+            <Button onClick={load} disabled={loading} variant="secondary">
+              {loading ? 'Loading…' : 'Load more'}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
