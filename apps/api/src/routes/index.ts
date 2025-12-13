@@ -323,14 +323,14 @@ router.put('/profile', authMiddleware, ProfileController.update);
 router.get('/games', authMiddleware, GamesController.list);
 router.get('/games/:id', authMiddleware, GamesController.detail);
 
-router.get('/friends', FriendsController.list);
-router.get('/friends/requests', FriendsController.sendRequest);
-router.post('/friends/requests', FriendsController.request);
-router.post('/friends/accept/:id', FriendsController.accept);
-router.delete('/friends/:friendId', FriendsController.remove);
-router.get('/friends/search', FriendsController.search);
+router.get('/friends', authMiddleware, FriendsController.list);
+router.get('/friends/requests', authMiddleware, FriendsController.sendRequest);
+router.post('/friends/requests', authMiddleware, FriendsController.request);
+router.post('/friends/accept/:id', authMiddleware, FriendsController.accept);
+router.delete('/friends/:friendId', authMiddleware, FriendsController.remove);
+router.get('/friends/search', authMiddleware, FriendsController.search);
 
-router.get('/matchmaking/recommendations', MatchmakingController.recommend);
+router.get('/matchmaking/recommendations', authMiddleware, MatchmakingController.recommend);
 
 // Manual trigger to sync from Steam API and return counts
 router.post('/sync/import', authMiddleware, async (req, res) => {

@@ -56,7 +56,7 @@ export const ProfileController = {
     }
     
     // Start with current profile
-    let profile = user?.profile || { displayName: 'User', userId, visibility: 'PUBLIC', favoriteGames: [] };
+    let profile = user?.profile || { displayName: 'User', userId, visibility: 'PUBLIC', favoriteGames: [], avatarUrl: null, bio: null };
     
     // Try to fetch fresh Steam data using steamId from JWT token or database
     const steamId = steamIdFromToken || user?.apiTokens?.steamId;
