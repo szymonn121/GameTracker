@@ -67,3 +67,4 @@ coverage/
 __pycache__/
 *.pyc
 .venv/
+apps/api/prisma/dev.db
