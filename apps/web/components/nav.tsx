@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
@@ -77,10 +78,12 @@ export function Nav() {
           {isLoggedIn ? (
             <div className="flex items-center gap-3 ml-4 pl-4 border-l border-border/40">
               {avatarUrl && (
-                <img 
+                <Image 
                   src={avatarUrl} 
                   alt={username || 'User'} 
-                  className="h-8 w-8 rounded-full"
+                  width={32}
+                  height={32}
+                  className="rounded-full"
                 />
               )}
               {username && (

@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function PlaytimeChart({ data }: Props) {
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: { month: string; hours: number } }[] }) => {
     if (!active || !payload?.length) return null;
     const item = payload[0]?.payload;
     return (

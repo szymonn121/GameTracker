@@ -26,8 +26,8 @@ export function FriendsAdd() {
       const data = await Api.searchFriends(term);
       setResults(data);
       if (data.length === 0) setMessage('No matches found');
-    } catch (err: any) {
-      setMessage(err?.message || 'Search failed');
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Search failed');
     } finally {
       setLoading(false);
     }
@@ -40,8 +40,8 @@ export function FriendsAdd() {
       await Api.sendFriendRequest(userId);
       setResults((prev) => prev.map((r) => (r.id === userId ? { ...r, status: 'pending' } : r)));
       setMessage('Request sent');
-    } catch (err: any) {
-      setMessage(err?.message || 'Failed to send request');
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Failed to send request');
     } finally {
       setLoading(false);
     }

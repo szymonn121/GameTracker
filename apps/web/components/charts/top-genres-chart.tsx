@@ -10,7 +10,7 @@ interface Props {
 export function TopGenresChart({ data }: Props) {
   const truncate = (value: string, max = 12) => (value.length > max ? `${value.slice(0, max)}…` : value);
 
-  const CustomTick = (props: any) => {
+  const CustomTick = (props: { x?: number; y?: number; payload?: { value: string } }) => {
     const { x, y, payload } = props;
     return (
       <Text x={x} y={y} width={80} textAnchor="middle" verticalAnchor="start" fontSize={12} fill="#9ca3af">
@@ -19,7 +19,7 @@ export function TopGenresChart({ data }: Props) {
     );
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: { genre: string; hours: number } }[] }) => {
     if (!active || !payload?.length) return null;
     const item = payload[0]?.payload;
     return (
