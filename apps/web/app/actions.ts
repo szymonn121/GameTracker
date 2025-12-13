@@ -12,7 +12,8 @@ export async function fetchDashboardData() {
   const token = cookieStore.get('auth_token')?.value || process.env.NEXT_PUBLIC_API_TOKEN;
   
   // Add timestamp to prevent any caching
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000'}/dashboard?_t=${Date.now()}`;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+  const url = `${baseUrl}/dashboard?_t=${Date.now()}`;
   
   const res = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
