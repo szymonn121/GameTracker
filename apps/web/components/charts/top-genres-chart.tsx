@@ -12,6 +12,7 @@ export function TopGenresChart({ data }: Props) {
 
   const CustomTick = (props: { x?: number; y?: number; payload?: { value: string } }) => {
     const { x, y, payload } = props;
+    if (!payload) return null;
     return (
       <Text x={x} y={y} width={80} textAnchor="middle" verticalAnchor="start" fontSize={12} fill="#9ca3af">
         {truncate(payload.value, 14)}
