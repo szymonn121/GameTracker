@@ -2,6 +2,9 @@
 
 Full-stack monorepo dla dashboardu Steam z integracją RAWG API, autentykacją przez Steam OpenID i funkcjami społecznościowymi.
 
+## Website link
+http://46.59.10.17:10370/
+
 ## Stack
 - **Frontend**: Next.js 14 (App Router, TypeScript), TailwindCSS, shadcn/ui
 - **Backend**: Express (TypeScript), Prisma + SQLite, Steam OpenID
