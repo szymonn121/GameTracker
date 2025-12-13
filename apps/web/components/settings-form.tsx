@@ -153,7 +153,7 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
                     <div
                       key={i}
                       className="h-6 w-6 rounded-full ring-2 ring-offset-2 ring-offset-card"
-                      style={{ backgroundColor: color, ringColor: color }}
+                      style={{ backgroundColor: color, outlineColor: color }}
                     />
                   ))}
                 </div>
