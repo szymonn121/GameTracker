@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme="cyber-blue"] {
   --background: #0b1021;
   --foreground: #e8edf5;
   --card: #11162b;
@@ -18,6 +19,94 @@
   --border: #1f2a44;
   --input: #1f2a44;
   --ring: #7dd3fc;
+}
+
+[data-theme="purple-haze"] {
+  --background: #0f0a1a;
+  --foreground: #f0e7ff;
+  --card: #1a0f2e;
+  --card-foreground: #f0e7ff;
+  --popover: #1a0f2e;
+  --popover-foreground: #f0e7ff;
+  --primary: #c084fc;
+  --primary-foreground: #1a0f2e;
+  --secondary: #2d1b4e;
+  --secondary-foreground: #f0e7ff;
+  --muted: #251640;
+  --muted-foreground: #d4c5f9;
+  --accent: #fb7185;
+  --accent-foreground: #1a0f2e;
+  --destructive: #ef4444;
+  --destructive-foreground: #fef2f2;
+  --border: #2d1b4e;
+  --input: #2d1b4e;
+  --ring: #c084fc;
+}
+
+[data-theme="emerald-night"] {
+  --background: #0a1512;
+  --foreground: #e7faf0;
+  --card: #0f211a;
+  --card-foreground: #e7faf0;
+  --popover: #0f211a;
+  --popover-foreground: #e7faf0;
+  --primary: #34d399;
+  --primary-foreground: #0f211a;
+  --secondary: #1b3a2f;
+  --secondary-foreground: #e7faf0;
+  --muted: #16302a;
+  --muted-foreground: #c5f9dc;
+  --accent: #60a5fa;
+  --accent-foreground: #0f211a;
+  --destructive: #ef4444;
+  --destructive-foreground: #fef2f2;
+  --border: #1b3a2f;
+  --input: #1b3a2f;
+  --ring: #34d399;
+}
+
+[data-theme="sunset-orange"] {
+  --background: #1a0f0a;
+  --foreground: #fff5e7;
+  --card: #2e1a0f;
+  --card-foreground: #fff5e7;
+  --popover: #2e1a0f;
+  --popover-foreground: #fff5e7;
+  --primary: #fb923c;
+  --primary-foreground: #2e1a0f;
+  --secondary: #4e2d1b;
+  --secondary-foreground: #fff5e7;
+  --muted: #402516;
+  --muted-foreground: #f9d5c5;
+  --accent: #fbbf24;
+  --accent-foreground: #2e1a0f;
+  --destructive: #ef4444;
+  --destructive-foreground: #fef2f2;
+  --border: #4e2d1b;
+  --input: #4e2d1b;
+  --ring: #fb923c;
+}
+
+[data-theme="rose-gold"] {
+  --background: #1a0a0f;
+  --foreground: #ffe7f0;
+  --card: #2e0f1a;
+  --card-foreground: #ffe7f0;
+  --popover: #2e0f1a;
+  --popover-foreground: #ffe7f0;
+  --primary: #fb7185;
+  --primary-foreground: #2e0f1a;
+  --secondary: #4e1b2d;
+  --secondary-foreground: #ffe7f0;
+  --muted: #401625;
+  --muted-foreground: #f9c5d5;
+  --accent: #f59e0b;
+  --accent-foreground: #2e0f1a;
+  --destructive: #ef4444;
+  --destructive-foreground: #fef2f2;
+  --border: #4e1b2d;
+  --input: #4e1b2d;
+  --ring: #fb7185;
 }
 
 @tailwind base;
