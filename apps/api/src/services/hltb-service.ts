@@ -6,7 +6,7 @@ const client = new HowLongToBeatService();
 export class HLTBService {
   static async searchByName(name: string) {
     const cacheKey = `hltb:search:${name}`;
-    const cached = await CacheService.get<unknown>(cacheKey);
+    const cached = await CacheService.get<any>(cacheKey);
     if (cached) return cached;
     const results = await client.search(name);
     await CacheService.set(cacheKey, results, 86400, 'hltb');

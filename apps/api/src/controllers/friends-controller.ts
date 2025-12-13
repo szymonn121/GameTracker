@@ -47,7 +47,7 @@ export const FriendsController = {
 
     const matches = await prisma.userProfile.findMany({
       where: {
-        displayName: { contains: q, mode: 'insensitive' },
+        displayName: { contains: q },
         userId: { not: userId }
       },
       select: { userId: true, displayName: true, avatarUrl: true },

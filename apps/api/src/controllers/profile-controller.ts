@@ -69,7 +69,7 @@ export const ProfileController = {
           profile = {
             ...profile,
             displayName: steamSummary.personaname,
-            avatarUrl: steamSummary.avatarfull || steamSummary.avatarmedium || profile.avatarUrl
+            avatarUrl: steamSummary.avatarfull || steamSummary.avatarmedium || profile.avatarUrl || null
           };
         }
       } catch (err) {
