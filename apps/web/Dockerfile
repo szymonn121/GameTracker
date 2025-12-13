@@ -1,5 +1,7 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
+ARG API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_BASE_URL=${API_URL}
 COPY package*.json ./
 COPY apps/web/package*.json ./apps/web/
 COPY packages/shared/package*.json ./packages/shared/
