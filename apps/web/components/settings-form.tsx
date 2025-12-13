@@ -65,7 +65,7 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <label className="text-xs text-muted-foreground">Display name</label>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground">Display Name</label>
             <Input 
               value={profile.displayName} 
               disabled

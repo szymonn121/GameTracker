@@ -69,6 +69,16 @@ router.get('/auth/steam/return', async (req, res) => {
 
     if (!user) {
       console.log(`[Auth] Creating new user for steamId: ${steamId}`);
+      
+      // Fetch Steam profile data before creating user
+      let steamProfile = null;
+      try {
+        const { SteamService } = await import('../services/steam-service');
+        steamProfile = await SteamService.getPlayerSummaries(steamId);
+      } catch (err) {
+        console.warn('[Auth] Could not fetch Steam profile during signup:', (err as Error).message);
+      }
+      
       try {
         user = await prisma.user.create({
           data: {
@@ -76,8 +86,8 @@ router.get('/auth/steam/return', async (req, res) => {
             passwordHash: '', // Steam users don't have passwords
             profile: {
               create: {
-                displayName: `Player_${steamId.slice(-6)}`,
-                avatarUrl: null
+                displayName: steamProfile?.personaname || `Player_${steamId.slice(-6)}`,
+                avatarUrl: steamProfile?.avatarfull || steamProfile?.avatarmedium || null
               }
             },
             apiTokens: {
@@ -97,26 +107,29 @@ router.get('/auth/steam/return', async (req, res) => {
 
     if (!user) throw new Error('User not found after creation');
 
-    // Step 3: Fetch fresh profile from Steam API using server's global key (background)
-    (async () => {
-      try {
-        const { SteamService } = await import('../services/steam-service');
-        const summary = await SteamService.getPlayerSummaries(steamId);
+    // Step 3: For existing users, fetch fresh profile from Steam API (background)
+    // For new users, profile was already set during creation
+    if (req.body.userId) {  // Only update if user already existed
+      (async () => {
+        try {
+          const { SteamService } = await import('../services/steam-service');
+          const summary = await SteamService.getPlayerSummaries(steamId);
 
-        if (summary && summary.personaname) {
-          console.log(`[Auth] Updating profile: "${summary.personaname}" avatar from Steam`);
-          await prisma.userProfile.update({
-            where: { userId: user.id },
-            data: {
-              displayName: summary.personaname,
-              avatarUrl: summary.avatarfull || summary.avatarmedium || null
-            }
-          }).catch(err => console.warn('[Auth] Profile update failed:', (err as Error).message));
+          if (summary && summary.personaname) {
+            console.log(`[Auth] Updating profile: "${summary.personaname}" avatar from Steam`);
+            await prisma.userProfile.update({
+              where: { userId: user.id },
+              data: {
+                displayName: summary.personaname,
+                avatarUrl: summary.avatarfull || summary.avatarmedium || null
+              }
+            }).catch(err => console.warn('[Auth] Profile update failed:', (err as Error).message));
+          }
+        } catch (err) {
+          console.warn('[Auth] Could not fetch Steam profile (non-blocking):', (err as Error).message);
         }
-      } catch (err) {
-        console.warn('[Auth] Could not fetch Steam profile (non-blocking):', (err as Error).message);
-      }
-    })();
+      })();
+    }
 
     // Step 4: Create JWT token (proves authentication, contains userId + steamId for API calls)
     const token = signToken({ userId: user.id, email: user.email, steamId });
@@ -304,8 +317,8 @@ router.get('/api/stats/:appid', authMiddleware, async (req, res) => {
  * Require auth for dashboard to ensure per-user isolation
  */
 router.get('/dashboard', authMiddleware, DashboardController.get);
-router.get('/profile', ProfileController.me);
-router.put('/profile', ProfileController.update);
+router.get('/profile', authMiddleware, ProfileController.me);
+router.put('/profile', authMiddleware, ProfileController.update);
 
 router.get('/games', authMiddleware, GamesController.list);
 router.get('/games/:id', authMiddleware, GamesController.detail);
