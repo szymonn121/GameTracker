@@ -29,16 +29,32 @@ export class DashboardService {
 
     // Compute metrics from DB
     const totalHours = user.userGames.reduce((sum, ug) => sum + ug.hours, 0);
-    const monthlyHours = user.userGames
-      .flatMap((ug) => {
-        const data = typeof ug.playtimeByMonth === 'string' ? JSON.parse(ug.playtimeByMonth) : (ug.playtimeByMonth as unknown[] | undefined);
-        return Array.isArray(data) ? data : [];
-      })
-      .slice(0, 12)
-      .map((entry: unknown) => {
-        const e = entry as { month: string; hours: number };
-        return { month: e.month, hours: e.hours };
-      });
+    const monthlyAggregate: Record<string, number> = {};
+    for (const ug of user.userGames) {
+      if (!ug.playtimeByMonth) continue;
+      try {
+        const parsed = typeof ug.playtimeByMonth === 'string' ? JSON.parse(ug.playtimeByMonth) : ug.playtimeByMonth;
+        if (parsed && typeof parsed === 'object') {
+          for (const [month, hours] of Object.entries(parsed as Record<string, number>)) {
+            monthlyAggregate[month] = (monthlyAggregate[month] ?? 0) + (Number(hours) || 0);
+          }
+        }
+      } catch (err) {
+        console.warn('[Dashboard] Failed to parse playtimeByMonth for userGame:', err);
+      }
+    }
+
+    // Build last 12 months chronologically (oldest first) to feed the chart
+    const now = new Date();
+    const monthKeys = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1));
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    });
+
+    const monthlyHours = monthKeys.map((key) => ({ 
+      month: key, 
+      hours: Math.round((monthlyAggregate[key] ?? 0) * 10) / 10  // Round to 1 decimal place
+    }));
 
     // Repurpose "topGenres" to carry most played games (name + hours)
     const userGamesAll = await prisma.userGame.findMany({ where: { userId }, include: { game: true } });

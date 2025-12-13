@@ -8,6 +8,16 @@ import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Api } from '../lib/api';
 import { UserProfile } from '@game-tracker/shared';
+import { useTheme } from './providers';
+import { Palette } from 'lucide-react';
+
+const themes = [
+  { id: 'cyber-blue' as const, name: 'Cyber Blue', colors: ['#7dd3fc', '#38bdf8', '#0ea5e9'] },
+  { id: 'purple-haze' as const, name: 'Purple Haze', colors: ['#c084fc', '#a855f7', '#9333ea'] },
+  { id: 'emerald-night' as const, name: 'Emerald Night', colors: ['#34d399', '#10b981', '#059669'] },
+  { id: 'sunset-orange' as const, name: 'Sunset Orange', colors: ['#fb923c', '#f97316', '#ea580c'] },
+  { id: 'rose-gold' as const, name: 'Rose Gold', colors: ['#fb7185', '#f43f5e', '#e11d48'] }
+];
 
 interface SettingsFormProps {
   initialProfile: UserProfile;
@@ -17,6 +27,7 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
   const [profile, setProfile] = useState(initialProfile);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const { theme, setTheme } = useTheme();
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -108,6 +119,46 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
               <p className="text-xs text-muted-foreground">Email digest of playtime</p>
             </div>
             <Badge className="bg-secondary/70 text-foreground">Disabled</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Theme
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {themes.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id)}
+                className={`group relative rounded-xl border-2 p-4 text-left transition-all ${
+                  theme === t.id
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-secondary/30 hover:border-primary/50'
+                }`}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="font-semibold">{t.name}</span>
+                  {theme === t.id && (
+                    <Badge className="bg-primary text-primary-foreground">Active</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {t.colors.map((color, i) => (
+                    <div
+                      key={i}
+                      className="h-6 w-6 rounded-full ring-2 ring-offset-2 ring-offset-card"
+                      style={{ backgroundColor: color, ringColor: color }}
+                    />
+                  ))}
+                </div>
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>
