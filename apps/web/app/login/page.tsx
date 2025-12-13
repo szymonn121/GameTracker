@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Gamepad2 } from 'lucide-react';
+import { apiBaseUrl } from '@/lib/utils';
 
 export default function LoginPage() {
   // Clear old tokens when landing on login page
@@ -13,7 +14,7 @@ export default function LoginPage() {
   }, []);
 
   const handleSteamLogin = () => {
-    window.location.href = 'http://localhost:4000/auth/steam';
+    window.location.href = `${apiBaseUrl}/auth/steam`;
   };
 
   return (
