@@ -35,14 +35,14 @@ export function PlaytimeChart({ data }: Props) {
           <AreaChart data={data} margin={{ top: 20, right: 15, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#7dd3fc" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#7dd3fc" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.85} />
+                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="month" stroke="#9ca3af" />
-            <YAxis stroke="#9ca3af" tickFormatter={(value) => Math.round(value).toString()} />
+            <XAxis dataKey="month" stroke="var(--muted-foreground)" />
+            <YAxis stroke="var(--muted-foreground)" tickFormatter={(value) => Math.round(value).toString()} />
             <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey="hours" stroke="#7dd3fc" fillOpacity={1} fill="url(#colorHours)" />
+            <Area type="monotone" dataKey="hours" stroke="var(--primary)" fillOpacity={1} fill="url(#colorHours)" />
           </AreaChart>
         </ResponsiveContainer>
       )}

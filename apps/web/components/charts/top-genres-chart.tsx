@@ -34,29 +34,29 @@ export function TopGenresChart({ data }: Props) {
     <div className="h-80 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f2a44" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="genre"
-            stroke="#9ca3af"
+            stroke="var(--muted-foreground)"
             interval={0}
             tickLine={false}
             height={64}
             tickMargin={12}
             tick={<CustomTick />}
           />
-          <YAxis stroke="#9ca3af" tickLine={false} axisLine={{ stroke: '#1f2a44' }} />
+          <YAxis stroke="var(--muted-foreground)" tickLine={false} axisLine={{ stroke: 'var(--border)' }} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,189,248,0.08)' }} />
           <defs>
             <linearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.95} />
-              <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.65} />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.95} />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.55} />
             </linearGradient>
           </defs>
           <Bar
             dataKey="hours"
             fill="url(#barFill)"
             radius={[6, 6, 0, 0]}
-            activeBar={{ fill: '#0ea5e9' }}
+            activeBar={{ fill: 'var(--primary)' }}
             maxBarSize={54}
           />
         </BarChart>

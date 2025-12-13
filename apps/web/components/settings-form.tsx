@@ -160,6 +160,9 @@ export function SettingsForm({ initialProfile }: SettingsFormProps) {
               </button>
             ))}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Theme updates apply to charts, buttons, and other accents across the app.
+          </p>
         </CardContent>
       </Card>
     </div>
