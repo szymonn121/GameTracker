@@ -51,11 +51,19 @@ export interface GameDetailResponse {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  // Get token from localStorage (client-side) or env override (server-side build-time)
-  const token = typeof window !== 'undefined'
-    ? localStorage.getItem('auth_token')
-    : process.env.NEXT_PUBLIC_API_TOKEN;
-    
+  // Get token from cookie on the server, or localStorage on the client
+  let token: string | null | undefined;
+  if (typeof window === 'undefined') {
+    try {
+      const { cookies } = await import('next/headers');
+      token = cookies().get('auth_token')?.value || process.env.NEXT_PUBLIC_API_TOKEN;
+    } catch {
+      token = process.env.NEXT_PUBLIC_API_TOKEN;
+    }
+  } else {
+    token = localStorage.getItem('auth_token');
+  }
+
   const res = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     headers: {
