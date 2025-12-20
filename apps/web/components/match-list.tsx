@@ -60,7 +60,7 @@ export function MatchList({ initialMatches }: MatchListProps) {
                   <p className="text-xs text-muted-foreground">Overlap: {match.reasons?.join(', ')}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-primary/20 text-primary-foreground">Score {match.score.toFixed(2)}</Badge>
+                  <Badge className="bg-primary/40 text-white border border-primary/50 font-semibold">Score {match.score.toFixed(2)}</Badge>
                   <Button 
                     size="sm" 
                     className="gap-2"
