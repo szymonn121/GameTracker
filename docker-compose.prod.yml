@@ -1,0 +1,42 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    user: "0"
+    environment:
+      PORT: 4000
+      DATABASE_URL: file:/app/prisma/dev.db
+      JWT_SECRET: ${JWT_SECRET}
+      STEAM_API_KEY: ${STEAM_API_KEY}
+      API_URL: http://46.59.10.17:10380/api
+      FRONTEND_URL: http://46.59.10.17:10370
+    ports:
+      - "10380:4000"
+    volumes:
+      - api_data:/app/prisma
+    networks:
+      - app-network
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        API_URL: http://46.59.10.17:10380/api
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_BASE_URL: http://46.59.10.17:10380/api
+    ports:
+      - "10370:3000"
+    networks:
+      - app-network
+
+volumes:
+  api_data:
+
+networks:
+  app-network:
+    driver: bridge

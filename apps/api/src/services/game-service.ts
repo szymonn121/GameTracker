@@ -27,6 +27,13 @@ export class GameService {
     const screenshotsArray = rawgData?.screenshots?.map((s) => s.image) ||
       details.screenshots?.map((s: { path_full: string }) => s.path_full) || [];
     
+    // Parse release date safely
+    const parseReleaseDate = (dateStr: string | undefined): Date | null => {
+      if (!dateStr) return null;
+      const parsed = new Date(dateStr);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+    
     const game = await prisma.game.upsert({
       where: { id },
       update: {
@@ -37,7 +44,7 @@ export class GameService {
         tags: JSON.stringify(tagsArray),
         summary: rawgData?.description || details.short_description,
         rating: rawgData?.rating ? Math.round(rawgData.rating * 10) : details.metacritic?.score,
-        releaseDate: details.release_date?.date ? new Date(details.release_date.date) : undefined,
+        releaseDate: parseReleaseDate(details.release_date?.date),
         screenshots: JSON.stringify(screenshotsArray)
       },
       create: {
@@ -49,7 +56,7 @@ export class GameService {
         tags: JSON.stringify(tagsArray),
         summary: rawgData?.description || details.short_description,
         rating: rawgData?.rating ? Math.round(rawgData.rating * 10) : details.metacritic?.score,
-        releaseDate: details.release_date?.date ? new Date(details.release_date.date) : undefined,
+        releaseDate: parseReleaseDate(details.release_date?.date),
         screenshots: JSON.stringify(screenshotsArray)
       }
     });

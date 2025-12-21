@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  profile      UserProfile?
+  friends      Friend[] @relation("UserFriends")
+  friendOf     Friend[] @relation("FriendOf")
+  requestsFrom FriendRequest[] @relation("FromUser")
+  requestsTo   FriendRequest[] @relation("ToUser")
+  userGames    UserGame[]
+  matchRequests MatchRequest[] @relation("UserMatches")
+  apiTokens    ApiToken[]
+  @@index([email])
+}
+
+model ApiToken {
+  id        String   @id @default(cuid())
+  userId    String
+  steamId   String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  displayName String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Friend {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+  user      User     @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User     @relation("FriendOf", fields: [friendId], references: [id], onDelete: Cascade)
+  @@unique([userId, friendId])
+  @@index([friendId])
+}
+
+model FriendRequest {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  from      User     @relation("FromUser", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("ToUser", fields: [toId], references: [id], onDelete: Cascade)
+  @@unique([fromId, toId])
+  @@index([toId])
+}
+
+model Game {
+  id           String   @id @default(cuid())
+  appId        Int      @unique
+  name         String   @unique
+  headerImage  String?
+  releaseDate  String?
+  developers   String?
+  publishers   String?
+  genres       String?
+  description  String?
+  isFree       Boolean  @default(false)
+  userGames    UserGame[]
+  createdAt    DateTime @default(now())
+}
+
+model UserGame {
+  id        String   @id @default(cuid())
+  userId    String
+  gameId    String
+  playtime  Int      @default(0)
+  rating    Int?
+  status    String   @default("unplayed")
+  note      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  @@unique([userId, gameId])
+  @@index([gameId])
+}
+
+model MatchRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  gameId    String?
+  createdAt DateTime @default(now())
+  user      User     @relation("UserMatches", fields: [userId], references: [id], onDelete: Cascade)
+}

@@ -6,6 +6,7 @@ COPY packages/shared/package*.json ./packages/shared/
 RUN npm ci
 COPY . .
 WORKDIR /app/apps/api
+# Use SQLite schema directly (no Postgres)
 RUN npx prisma generate
 RUN npm run build
 

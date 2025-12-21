@@ -68,3 +68,6 @@ __pycache__/
 *.pyc
 .venv/
 apps/api/prisma/dev.db
+backup_vps
+.env.example
+.env.production

@@ -37,7 +37,8 @@ export function createServer() {
   app.use(morgan('dev'));
   app.use(apiLimiter);
 
-  app.use('/', router);
+  // Mount all API routes under /api to match client/base URLs
+  app.use('/api', router);
 
   app.use(errorHandler);
   return app;
